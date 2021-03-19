@@ -1,5 +1,5 @@
 defmodule WorkingHoursReport do
-  alias WorkingHoursReport.Parser
+  alias WorkingHoursReport.{AllHours, HoursPerMonth, HoursPerYear}
 
   @devs [
     :Daniele,
@@ -30,31 +30,70 @@ defmodule WorkingHoursReport do
   }
 
   def build(filename) do
-    all_hours =
-      filename
-      |> Parser.parse_file()
-      |> Enum.reduce(report_hours(), fn line, report -> sum_all_hours(line, report) end)
-
-    hours_per_month =
-      filename
-      |> Parser.parse_file()
-      |> Enum.reduce(report_months(), fn line, report -> sum_hours_per_month(line, report) end)
-
-    hours_per_year =
-      filename
-      |> Parser.parse_file()
-      |> Enum.reduce(report_years(), fn line, report -> sum_hours_per_year(line, report) end)
+    all_hours = AllHours.build(filename, report_hours())
+    hours_per_month = HoursPerMonth.build(filename, report_months())
+    hours_per_year = HoursPerYear.build(filename, report_years())
 
     build_report(all_hours, hours_per_month, hours_per_year)
   end
 
-  # defp report_acc do
-  #   all_hours = Enum.into(@devs, %{}, &{&1, 0})
-  #   hours_per_month = Enum.into(@devs, %{}, &{&1, report_months()})
-  #   hours_per_year = Enum.into(@devs, %{}, &{&1, report_years()})
+  def build_from_many(filenames) when not is_list(filenames) do
+    {:error, "Please provide a list of strings"}
+  end
 
-  #   %{all_hours: all_hours, hours_per_month: hours_per_month, hours_per_year: hours_per_year}
-  # end
+  def build_from_many(filenames) do
+    result =
+      filenames
+      |> Task.async_stream(&build/1)
+      |> Enum.reduce(report_acc(), fn {:ok, result}, report ->
+        sum_reports(result, report)
+      end)
+
+    {:ok, result}
+  end
+
+  def sum_reports(
+        %{
+          all_hours: all_hours1,
+          hours_per_month: hours_per_month1,
+          hours_per_year: hours_per_year1
+        },
+        %{
+          all_hours: all_hours2,
+          hours_per_month: hours_per_month2,
+          hours_per_year: hours_per_year2
+        }
+      ) do
+    all_hours = merge_maps(all_hours1, all_hours2)
+
+    hours_per_month =
+      Enum.reduce(@devs, report_months(), fn name, report ->
+        Map.put(report, name, merge_maps_by_name(hours_per_month1, hours_per_month2, name))
+      end)
+
+    hours_per_year =
+      Enum.reduce(@devs, report_years(), fn name, report ->
+        Map.put(report, name, merge_maps_by_name(hours_per_year1, hours_per_year2, name))
+      end)
+
+    build_report(all_hours, hours_per_month, hours_per_year)
+  end
+
+  defp merge_maps_by_name(map1, map2, name) do
+    Map.merge(map1[name], map2[name], fn _keys, value1, value2 -> value1 + value2 end)
+  end
+
+  defp merge_maps(map1, map2) do
+    Map.merge(map1, map2, fn _keys, value1, value2 -> value1 + value2 end)
+  end
+
+  def report_acc do
+    all_hours = report_hours()
+    hours_per_month = report_months()
+    hours_per_year = report_years()
+
+    build_report(all_hours, hours_per_month, hours_per_year)
+  end
 
   defp report_hours, do: Enum.into(@devs, %{}, &{&1, 0})
 
@@ -66,52 +105,6 @@ defmodule WorkingHoursReport do
   defp report_years do
     years = Enum.into(2016..2020, %{}, &{&1, 0})
     Enum.into(@devs, %{}, &{&1, years})
-  end
-
-  # defp parser_atom(string), do: String.to_atom(string)
-
-  defp sum_all_hours(
-         [name, hours, _day, _month, _year],
-         %{} = report_hours_acc
-       ) do
-    name = String.to_atom(name)
-
-    Map.put(
-      report_hours_acc,
-      name,
-      report_hours_acc[name] + hours
-    )
-  end
-
-  defp sum_hours_per_month(
-         [name, hours, _day, month, _year],
-         %{} = report_month_acc
-       ) do
-    name = String.to_atom(name)
-    month_map = report_month_acc[name]
-
-    new_list =
-      Map.put(
-        month_map,
-        @months_index[month],
-        month_map[@months_index[month]] + hours
-      )
-
-    %{report_month_acc | name => new_list}
-  end
-
-  defp sum_hours_per_year([name, hours, _day, _month, year], %{} = report_year_acc) do
-    name = String.to_atom(name)
-    year_map = report_year_acc[name]
-
-    new_year_map =
-      Map.put(
-        year_map,
-        year,
-        year_map[year] + hours
-      )
-
-    %{report_year_acc | name => new_year_map}
   end
 
   defp build_report(all_hours, hours_per_month, hours_per_year) do

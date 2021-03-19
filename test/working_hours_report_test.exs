@@ -179,4 +179,193 @@ defmodule WorkingHoursReportTest do
       assert response == expected_response
     end
   end
+
+  describe "build_from_many/1" do
+    test "when a file list is provided, builds the report" do
+      filenames = ["gen_test.csv", "gen_test.csv"]
+      response = WorkingHoursReport.build_from_many(filenames)
+
+      expected_response = {
+        :ok,
+        %{
+          all_hours: %{
+            Cleiton: 54,
+            Daniele: 32,
+            Danilo: 14,
+            Diego: 20,
+            Giuliano: 26,
+            Jakeliny: 50,
+            Joseph: 0,
+            Mayk: 46,
+            Rafael: 30,
+            Vinicius: 16
+          },
+          hours_per_month: %{
+            Cleiton: %{
+              abr: 10,
+              ago: 0,
+              dez: 12,
+              fev: 0,
+              jan: 0,
+              jul: 14,
+              jun: 2,
+              mai: 0,
+              mar: 0,
+              nov: 0,
+              out: 16,
+              set: 0
+            },
+            Daniele: %{
+              abr: 14,
+              ago: 0,
+              dez: 10,
+              fev: 0,
+              jan: 0,
+              jul: 0,
+              jun: 8,
+              mai: 0,
+              mar: 0,
+              nov: 0,
+              out: 0,
+              set: 0
+            },
+            Danilo: %{
+              abr: 2,
+              ago: 0,
+              dez: 0,
+              fev: 12,
+              jan: 0,
+              jul: 0,
+              jun: 0,
+              mai: 0,
+              mar: 0,
+              nov: 0,
+              out: 0,
+              set: 0
+            },
+            Diego: %{
+              abr: 0,
+              ago: 8,
+              dez: 0,
+              fev: 0,
+              jan: 0,
+              jul: 0,
+              jun: 0,
+              mai: 0,
+              mar: 12,
+              nov: 0,
+              out: 0,
+              set: 0
+            },
+            Giuliano: %{
+              abr: 0,
+              ago: 0,
+              dez: 0,
+              fev: 18,
+              jan: 0,
+              jul: 0,
+              jun: 0,
+              mai: 8,
+              mar: 0,
+              nov: 0,
+              out: 0,
+              set: 0
+            },
+            Jakeliny: %{
+              abr: 0,
+              ago: 0,
+              dez: 18,
+              fev: 0,
+              jan: 0,
+              jul: 16,
+              jun: 0,
+              mai: 0,
+              mar: 0,
+              nov: 0,
+              out: 16,
+              set: 0
+            },
+            Joseph: %{
+              abr: 0,
+              ago: 0,
+              dez: 0,
+              fev: 0,
+              jan: 0,
+              jul: 0,
+              jun: 0,
+              mai: 0,
+              mar: 0,
+              nov: 0,
+              out: 0,
+              set: 0
+            },
+            Mayk: %{
+              abr: 8,
+              ago: 0,
+              dez: 10,
+              fev: 0,
+              jan: 0,
+              jul: 0,
+              jun: 0,
+              mai: 0,
+              mar: 6,
+              nov: 8,
+              out: 0,
+              set: 14
+            },
+            Rafael: %{
+              abr: 0,
+              ago: 8,
+              dez: 0,
+              fev: 0,
+              jan: 8,
+              jul: 14,
+              jun: 0,
+              mai: 0,
+              mar: 0,
+              nov: 0,
+              out: 0,
+              set: 0
+            },
+            Vinicius: %{
+              abr: 0,
+              ago: 0,
+              dez: 0,
+              fev: 0,
+              jan: 0,
+              jul: 16,
+              jun: 0,
+              mai: 0,
+              mar: 0,
+              nov: 0,
+              out: 0,
+              set: 0
+            }
+          },
+          hours_per_year: %{
+            Cleiton: %{2016 => 0, 2017 => 10, 2018 => 26, 2019 => 0, 2020 => 18},
+            Daniele: %{2016 => 10, 2017 => 0, 2018 => 14, 2019 => 0, 2020 => 8},
+            Danilo: %{2016 => 0, 2017 => 0, 2018 => 2, 2019 => 12, 2020 => 0},
+            Diego: %{2016 => 0, 2017 => 8, 2018 => 12, 2019 => 0, 2020 => 0},
+            Giuliano: %{2016 => 0, 2017 => 6, 2018 => 0, 2019 => 12, 2020 => 8},
+            Jakeliny: %{2016 => 16, 2017 => 18, 2018 => 0, 2019 => 12, 2020 => 4},
+            Joseph: %{2016 => 0, 2017 => 0, 2018 => 0, 2019 => 0, 2020 => 0},
+            Mayk: %{2016 => 22, 2017 => 2, 2018 => 0, 2019 => 8, 2020 => 14},
+            Rafael: %{2016 => 0, 2017 => 22, 2018 => 0, 2019 => 0, 2020 => 8},
+            Vinicius: %{2016 => 0, 2017 => 0, 2018 => 0, 2019 => 0, 2020 => 16}
+          }
+        }
+      }
+
+      assert response == expected_response
+    end
+
+    test "when a file list is not provided, returns an error" do
+      response = WorkingHoursReport.build_from_many("banana")
+
+      expected_response = {:error, "Please provide a list of strings"}
+
+      assert response == expected_response
+    end
+  end
 end
